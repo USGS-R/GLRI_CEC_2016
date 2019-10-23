@@ -1,0 +1,74 @@
+target_default: 26_mixtures
+
+packages:
+  - dplyr
+  
+include:
+  - 25_rank_data.yml
+  
+## All R files that are used must be listed here:
+sources:
+  - 26_mixtures/src/get_mixtures.R
+  
+targets:
+  26_mixtures:
+    depends: 
+      - EARsum_endpoint
+      
+  EARsum_endpoint:
+    command: sum_endpoints(chemicalSummary_deg_meto, filter_cutoffs = TRUE)
+    
+  EARsum_endpoint_nofilter:
+    command: sum_endpoints(chemicalSummary_deg_meto, filter_cutoffs = FALSE)
+    
+  contributing_chems:
+    command: calc_contr_chems(EARsum_endpoint)
+    
+  top_mixes:
+    command: calc_top_mixtures(contributing_chems)
+    
+  top_mixes_all:
+    command: calc_top_mixtures(contributing_chems, max_only = FALSE)
+    
+  mixtures_summary_all:
+    command: summarize_mixtures(top_mixtures = top_mixes_all)
+    
+  mixtures_summary:
+    command: summarize_mixtures(top_mixtures = top_mixes)
+    
+  mixtures_n_summary_all:
+    command: summarize_by_n(top_mixtures = top_mixes_all)
+    
+  mixtures_n_summary:
+    command: summarize_by_n(top_mixtures = top_mixes)
+    
+  figure/mixtures_summary_all.png:
+    command: plot_mix_summary(
+      out_file = target_name,
+      n_summary = mixtures_n_summary_all, 
+      mix_summary = mixtures_summary_all, 
+      top_mixtures = top_mixes_all, 
+      ear_sum = EARsum_endpoint)
+      
+  figure/mixtures_summary_limited.png:
+    command: plot_mix_summary(
+      out_file = target_name,
+      n_summary = mixtures_n_summary, 
+      mix_summary = mixtures_summary, 
+      top_mixtures = top_mixes, 
+      ear_sum = EARsum_endpoint)
+
+  chem_mix_metrics:
+    command: calc_chem_mix_metrics(top_mixtures = top_mixes, summed_EARs = EARsum_endpoint, target_name)
+  
+  chem_mix_metrics_all:
+    command: calc_chem_mix_metrics(top_mixtures = top_mixes_all, summed_EARs = EARsum_endpoint, target_name)
+   
+  26_mixtures/out/chem_mix_metrics_all.csv:
+    command: write.csv(chem_mix_metrics_all, target_name, row.names = FALSE)
+  
+  site_mix_metrics:
+    command: calc_site_mix_metrics(top_mixtures = top_mixes, chemicalSummary_conc)
+
+  site_mix_metrics_all:
+    command: calc_site_mix_metrics(top_mixtures = top_mixes_all, chemicalSummary_conc)

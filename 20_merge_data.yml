@@ -16,27 +16,48 @@ sources:
 targets:
   20_merge_data:
     depends: 
+      - chem_dls
       - data/pesticides.xlsx
       - data/pesticides_Conc.xlsx
       - data/pesticides_Bench.xlsx
       - chemicalSummary
       - chemicalSummary_bench
       - chemicalSummary_conc
-
+      - chemicalSummary_dls
+      - chemicalSummary_bench_hbs
+      
   merged_dat: 
     command: merge_data(tracking, pesticides_clean, neonics_clean, glyphosate_clean)
+    
+  reduced_dat:
+    command: remove_duplicate_chems(merged_dat)
     
   special_cas:
     command: get_special_cas()
     
+  chem_dls:
+    command: calc_detect_limits(reduced_dat)
+    
   filtered_censor:
-    command: remove_censor(merged_dat)
+    command: remove_censor(reduced_dat)
 
   chem_data: 
-    command: create_chemData(filtered_censor, special_cas, pCodeInfo)
+    command: create_chemData(filtered_censor, pCodeInfo)
+    
+  all_chems:
+    command: create_chemData(reduced_dat, pCodeInfo)
+    
+  chem_data_dl:
+    command: create_chemData(chem_dls, pCodeInfo)
+    
+  chems_missing_cas:
+    command: find_missing_cas(reduced_dat, chem_data)
     
   chem_info:
-    command: create_tox_chemInfo(chem_data, special_cas, pCodeInfo, classes)
+    command: create_tox_chemInfo(chem_data, special_cas, pCodeInfo, classes_fixed)
+    
+  chem_info_all:
+    command: create_tox_chemInfo(all_chems, special_cas, pCodeInfo, classes_fixed)
 
   site_info:
     command: create_tox_siteInfo(sites)
@@ -44,17 +65,29 @@ targets:
   data/pesticides.xlsx:
     command: create_toxExcel(chem_data, chem_info, site_info, exclusions, target_name)
 
+  data/pesticides_dls.xlsx:
+    command: create_toxExcel(chem_data_dl, chem_info, site_info, exclusions, target_name)
+  
   data/pesticides_Conc.xlsx:
     command: create_ConcExcel(chem_data, chem_info, site_info, exclusions, target_name)
 
   data/pesticides_Bench.xlsx:
     command: create_WQExcel(chem_data, chem_info, site_info, exclusions, benchmarks, target_name)
 
+  data/pesticides_Bench_hbs.xlsx:
+    command: create_WQExcel(chem_data, chem_info, site_info, exclusions, benchmarks_hbs, target_name)
+  
   chemicalSummary:
     command: get_chem_sum("data/pesticides.xlsx")
+    
+  chemicalSummary_dls:
+    command: get_chem_sum("data/pesticides_dls.xlsx")
 
   chemicalSummary_bench:
     command: get_chem_bench("data/pesticides_Bench.xlsx")
+    
+  chemicalSummary_bench_hbs:
+    command: get_chem_bench("data/pesticides_Bench_hbs.xlsx")
 
   chemicalSummary_conc:
     command: get_conc_summary("data/pesticides_Conc.xlsx")
